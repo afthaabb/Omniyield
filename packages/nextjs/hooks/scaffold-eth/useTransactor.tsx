@@ -1,4 +1,10 @@
-import { Hash, SendTransactionParameters, TransactionReceipt, WalletClient } from "viem";
+import {
+  Hash,
+  SendTransactionParameters,
+  TransactionReceipt,
+  WaitForTransactionReceiptReturnType,
+  WalletClient,
+} from "viem";
 import { Config, useWalletClient } from "wagmi";
 import { getPublicClient } from "wagmi/actions";
 import { SendTransactionMutate } from "wagmi/query";
@@ -49,7 +55,7 @@ export const useTransactor = (_walletClient?: WalletClient): TransactionFunc => 
 
     let notificationId = null;
     let transactionHash: Hash | undefined = undefined;
-    let transactionReceipt: TransactionReceipt | undefined;
+    let transactionReceipt: WaitForTransactionReceiptReturnType | undefined;
     let blockExplorerTxURL = "";
     let chainId: number = scaffoldConfig.targetNetworks[0].id;
     try {
@@ -75,10 +81,11 @@ export const useTransactor = (_walletClient?: WalletClient): TransactionFunc => 
         <TxnNotification message="Waiting for transaction to complete." blockExplorerLink={blockExplorerTxURL} />,
       );
 
-      transactionReceipt = await publicClient.waitForTransactionReceipt({
+      transactionReceipt = (await publicClient.waitForTransactionReceipt({
         hash: transactionHash,
         confirmations: options?.blockConfirmations,
-      });
+      })) as unknown as WaitForTransactionReceiptReturnType;
+
       notification.remove(notificationId);
 
       if (transactionReceipt.status === "reverted") throw new Error("Transaction reverted");
@@ -90,7 +97,9 @@ export const useTransactor = (_walletClient?: WalletClient): TransactionFunc => 
         },
       );
 
-      if (options?.onBlockConfirmation) options.onBlockConfirmation(transactionReceipt);
+      if (transactionReceipt && options?.onBlockConfirmation) {
+        options.onBlockConfirmation(transactionReceipt as TransactionReceipt);
+      }
     } catch (error: any) {
       if (notificationId) {
         notification.remove(notificationId);

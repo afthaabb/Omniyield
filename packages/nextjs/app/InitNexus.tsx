@@ -36,7 +36,7 @@ export function InitNexus() {
     try {
       if (!window.ethereum) throw new Error("No EVM wallet found");
       const provider = window.ethereum;
-      const sdkInstance = new NexusSDK();
+      const sdkInstance = new NexusSDK({ network: "testnet" });
       console.log("Initializing Nexus SDK...");
       await sdkInstance.initialize(provider); //mainnet
       console.log("Nexus SDK initialized successfully");
